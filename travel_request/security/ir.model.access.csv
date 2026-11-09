@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_travel_request_user,travel.request.user,model_travel_request,base.group_user,1,1,1,1
+access_travel_request_line_user,travel.request.line.user,model_travel_request_line,base.group_user,1,1,1,1
+access_travel_settlement_line_user,travel.settlement.line.user,model_travel_settlement_line,base.group_user,1,1,1,1
+access_travel_approval_log_user,travel.approval.log.user,model_travel_approval_log,base.group_user,1,1,1,0
+access_travel_budget_user,travel.budget.user,model_travel_budget,base.group_user,1,0,0,0
+access_travel_budget_hr,travel.budget.hr,model_travel_budget,hr.group_hr_manager,1,1,1,1
+access_travel_budget_account,travel.budget.account,model_travel_budget,account.group_account_manager,1,1,1,1
+access_travel_reject_reason,travel.reject.reason,model_travel_reject_reason,base.group_user,1,1,1,1

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_travel_root" 
+              name="Travel" 
+              web_icon="travel_request,static/description/icon.png" 
+              sequence="10"/>
+
+    <menuitem id="menu_travel_operations" 
+              name="Operations" 
+              parent="menu_travel_root" 
+              sequence="10"/>
+
+        <menuitem id="menu_travel_request" 
+                  name="My Travel Requests" 
+                  parent="menu_travel_operations" 
+                  action="action_travel_request" 
+                  sequence="10"/>
+
+        <menuitem id="menu_travel_budget" 
+                  name="Department Budgets" 
+                  parent="menu_travel_operations" 
+                  action="action_travel_budget" 
+                  sequence="20"
+                  groups="hr.group_hr_manager,account.group_account_manager"/>
+
+    <menuitem id="menu_travel_reporting" 
+              name="Reporting" 
+              parent="menu_travel_root" 
+              sequence="20"/>
+
+        <record id="action_travel_analysis" model="ir.actions.act_window">
+            <field name="name">Spending Analysis</field>
+            <field name="res_model">travel.request</field>
+            <field name="view_mode">graph,pivot</field>
+            <field name="search_view_id" ref="view_travel_request_search"/>
+            <field name="context">{'search_default_group_department': 1}</field>
+        </record>
+
+        <menuitem id="menu_travel_analysis" 
+                  name="Spending Analysis" 
+                  parent="menu_travel_reporting" 
+                  action="action_travel_analysis" 
+                  sequence="10"/>
+
+    <menuitem id="menu_travel_config" 
+              name="Configuration" 
+              parent="menu_travel_root" 
+              sequence="100"
+              groups="base.group_system,account.group_account_manager"/>
+
+        <menuitem id="menu_travel_settings" 
+                  name="Settings" 
+                  parent="menu_travel_config" 
+                  action="action_travel_config_settings" 
+                  sequence="10"/>
+
+</odoo>

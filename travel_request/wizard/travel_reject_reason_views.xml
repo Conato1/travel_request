@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_travel_reject_reason_form" model="ir.ui.view">
+        <field name="name">travel.reject.reason.form</field>
+        <field name="model">travel.reject.reason</field>
+        <field name="arch" type="xml">
+            <form string="Reject Request">
+                <p class="text-muted">
+                    Please provide a reason for rejecting this travel request. 
+                    This reason will be logged in the approval history.
+                </p>
+                <group>
+                    <field name="reason" placeholder="e.g., Budget exceeded, Policy violation, etc."/>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Reject Request" type="object" class="btn-danger"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_travel_reject_reason" model="ir.actions.act_window">
+        <field name="name">Reject Travel Request</field>
+        <field name="res_model">travel.reject.reason</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field> </record>
+</odoo>

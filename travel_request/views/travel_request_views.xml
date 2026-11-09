@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_travel_request_search" model="ir.ui.view">
+        <field name="name">travel.request.search</field>
+        <field name="model">travel.request</field>
+        <field name="arch" type="xml">
+            <search string="Search Travel Requests">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="analytic_account_id"/>
+                <filter string="My Requests" name="my_requests" domain="[('employee_id.user_id', '=', uid)]"/>
+                <filter string="To Approve" name="to_approve" domain="[('state', 'in', ['submitted', 'approved_manager', 'approved_hr', 'approved_finance', 'settlement'])]"/>
+                <separator/>
+                <filter string="Settlement Pending" name="settlement" domain="[('state', '=', 'settlement')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Department" name="group_department" context="{'group_by': 'department_id'}"/>
+                    <filter string="Analytic Account" name="group_analytic" context="{'group_by': 'analytic_account_id'}"/>
+                    <filter string="Status" name="group_status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_travel_request_tree" model="ir.ui.view">
+        <field name="name">travel.request.tree</field>
+        <field name="model">travel.request</field>
+        <field name="arch" type="xml">
+            <list string="Travel Requests" decoration-info="state == 'submitted'" decoration-success="state == 'done'" decoration-danger="state == 'rejected'" decoration-muted="state == 'draft'" decoration-warning="state == 'settlement'">
+                <field name="name"/>
+                <field name="employee_id" widget="many2one_avatar_user"/>
+                <field name="department_id"/>
+                <field name="analytic_account_id" optional="show"/>
+                <field name="destination"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="estimated_cost" widget="monetary" string="Planned" optional="show" decoration-bf="1"/>
+                <field name="total_actual_cost" widget="monetary" string="Actual" optional="hide"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="state" widget="badge" decoration-info="state == 'submitted'" decoration-success="state == 'done'" decoration-warning="state in ['approved_manager', 'approved_hr', 'settlement']"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_travel_request_form" model="ir.ui.view">
+        <field name="name">travel.request.form</field>
+        <field name="model">travel.request</field>
+        <field name="arch" type="xml">
+            <form string="Travel Request">
+                <header>
+                    <button name="action_submit" string="Submit to Manager" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_approve_manager" string="Manager Approve" type="object" class="oe_highlight" invisible="state != 'submitted'"/>
+                    <button name="action_approve_hr" string="HR Approve" type="object" class="oe_highlight" invisible="state != 'approved_manager'"/>
+                    <button name="action_approve_finance" string="Finance Approve (Release Cash)" type="object" class="oe_highlight" invisible="state != 'approved_hr'"/>
+                    <button name="action_return_from_trip" string="Return &amp; Start Settlement" type="object" class="oe_highlight" invisible="state != 'approved_finance'"/>
+                    <button name="action_done_settlement" string="Finalize Settlement" type="object" class="oe_highlight" invisible="state != 'settlement'"/>
+                    <button name="action_reject" string="Reject" type="object" class="btn-danger" invisible="state not in ['submitted', 'approved_manager', 'approved_hr', 'approved_finance', 'settlement']"/>
+                    <button name="action_reset_draft" string="Reset to Draft" type="object" invisible="state not in ['rejected', 'done']"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved_manager,approved_hr,approved_finance,settlement,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_journal_entry" type="object" class="oe_stat_button" icon="fa-book" invisible="not account_move_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Journal</span>
+                                <span class="o_stat_text">Entry</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <widget name="web_ribbon" title="Paid &amp; Done" bg_color="bg-success" invisible="state != 'done'"/>
+                    <widget name="web_ribbon" title="Rejected" bg_color="bg-danger" invisible="state != 'rejected'"/>
+
+                    <div class="oe_title">
+                        <label for="name" string="Request Number"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <group>
+                        <group string="Employee Information">
+                            <field name="employee_id" readonly="state != 'draft'" widget="many2one_avatar_user"/>
+                            <field name="department_id"/>
+                            <field name="job_title"/>
+                            <field name="analytic_account_id" options="{'no_create': True}" placeholder="e.g. Project Alpha"/>
+                        </group>
+                        <group string="Trip Details">
+                            <field name="destination" readonly="state != 'draft'"/>
+                            <label for="start_date" string="Dates"/>
+                            <div class="o_row">
+                                <field name="start_date" readonly="state != 'draft'" widget="daterange" options="{'related_end_date': 'end_date'}"/>
+                                <i class="fa fa-long-arrow-right mx-2" aria-label="Arrow icon" title="Arrow"/>
+                                <field name="end_date" readonly="state != 'draft'" widget="daterange" options="{'related_start_date': 'start_date'}"/>
+                            </div>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Planned Expenses (Estimate)" name="planned_expenses">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="category"/>
+                                    <field name="product_id" options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="description"/>
+                                    <field name="qty"/>
+                                    <field name="price_unit" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="amount" widget="monetary" sum="Total Estimate" readonly="1" force_save="1"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="estimated_cost" widget="monetary" decoration-bf="1"/>
+                                <field name="cash_advance" widget="monetary" readonly="state != 'approved_hr'" class="oe_edit_only"/> 
+                                <field name="cash_advance" widget="monetary" readonly="1" class="oe_read_only"/>
+                            </group>
+                        </page>
+
+                        <page string="Actual Expenses (Settlement)" name="actual_expenses" invisible="state in ['draft', 'submitted', 'approved_manager', 'approved_hr']">
+                            <div class="alert alert-info" role="alert" invisible="state != 'settlement'">
+                                <strong>Info:</strong> User fills usage. Finance verifies receipts.
+                            </div>
+                            <field name="settlement_ids" readonly="state == 'done'">
+                                <list editable="bottom">
+                                    <field name="date"/>
+                                    <field name="category"/>
+                                    <field name="product_id" options="{'no_create': True, 'no_open': True}"/>
+                                    <field name="description"/>
+                                    <field name="qty"/>
+                                    <field name="price_unit" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="receipt_type" optional="show"/>
+                                    <field name="attachment" filename="attachment_name" widget="binary" invisible="receipt_type == 'hard'"/>
+                                    <field name="attachment_name" column_invisible="True"/>
+                                    <field name="account_id" options="{'no_create': True}" optional="show"/> 
+                                    <field name="amount" widget="monetary" sum="Total Actual" readonly="1" force_save="1"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="total_actual_cost" widget="monetary"/>
+                                <field name="cash_advance" widget="monetary"/>
+                                <field name="difference_amount" widget="monetary" class="oe_subtotal_footer_separator" decoration-danger="difference_amount &lt; 0" decoration-success="difference_amount &gt; 0"/>
+                                <div class="text-muted text-end">
+                                    <span invisible="difference_amount &lt; 0" class="text-success">Company Reimburse Employee</span>
+                                    <span invisible="difference_amount &gt;= 0" class="text-danger">Employee Return Money</span>
+                                </div>
+                            </group>
+                        </page>
+
+                        <page string="Accounting Entries" name="accounting" invisible="not account_move_id">
+                            <field name="move_line_ids" readonly="1">
+                                <list decoration-muted="debit == 0 and credit == 0">
+                                    <field name="account_id"/>
+                                    <field name="partner_id"/>
+                                    <field name="analytic_distribution" widget="analytic_distribution"/>
+                                    <field name="name"/>
+                                    <field name="debit" sum="Total Debit"/>
+                                    <field name="credit" sum="Total Credit"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Business Purpose" name="purpose">
+                            <field name="purpose" placeholder="Describe the business purpose..." readonly="state != 'draft'"/>
+                        </page>
+
+                        <page string="Approval Logs" name="logs">
+                            <field name="approval_log_ids" readonly="1">
+                                <list>
+                                    <field name="log_date"/>
+                                    <field name="user_id" widget="many2one_avatar_user"/>
+                                    <field name="activity_type"/>
+                                    <field name="comment"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_travel_request" model="ir.actions.act_window">
+        <field name="name">Travel Requests</field>
+        <field name="res_model">travel.request</field>
+        <field name="view_mode">list,form,graph,pivot</field>
+        <field name="search_view_id" ref="view_travel_request_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new Travel Request
+            </p>
+        </field>
+    </record>
+
+    <record id="view_travel_request_graph" model="ir.ui.view">
+        <field name="name">travel.request.graph</field>
+        <field name="model">travel.request</field>
+        <field name="arch" type="xml">
+            <graph string="Travel Spending Analysis" type="bar" sample="1">
+                <field name="department_id"/>
+                <field name="total_actual_cost" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_travel_request_pivot" model="ir.ui.view">
+        <field name="name">travel.request.pivot</field>
+        <field name="model">travel.request</field>
+        <field name="arch" type="xml">
+            <pivot string="Travel Spending Analysis" sample="1">
+                <field name="department_id" type="row"/>
+                <field name="start_date" interval="month" type="col"/>
+                <field name="total_actual_cost" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_travel_settlement_line_search" model="ir.ui.view">
+        <field name="name">travel.settlement.line.search</field>
+        <field name="model">travel.settlement.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="category"/>
+                <field name="product_id"/>
+                <field name="request_id"/>
+                <filter string="Date" name="group_date" context="{'group_by': 'date:month'}"/>
+                <filter string="Category" name="group_category" context="{'group_by': 'category'}"/>
+                <filter string="Product" name="group_product" context="{'group_by': 'product_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_travel_settlement_line_graph" model="ir.ui.view">
+        <field name="name">travel.settlement.line.graph</field>
+        <field name="model">travel.settlement.line</field>
+        <field name="arch" type="xml">
+            <graph string="Expense Category Analysis" type="pie" sample="1">
+                <field name="category"/>
+                <field name="amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_travel_settlement_line_pivot" model="ir.ui.view">
+        <field name="name">travel.settlement.line.pivot</field>
+        <field name="model">travel.settlement.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Expense Analysis" sample="1">
+                <field name="category" type="row"/>
+                <field name="product_id" type="row"/>
+                <field name="date" interval="month" type="col"/>
+                <field name="amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+</odoo>

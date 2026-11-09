@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_travel_request" model="ir.actions.report">
+        <field name="name">Travel Order / Settlement</field>
+        <field name="model">travel.request</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">travel_request.report_travel_document</field>
+        <field name="report_file">travel_request.report_travel_document</field>
+        <field name="print_report_name">'Travel - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_travel_request"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_travel_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="text-center mb-4">
+                            <h2>TRAVEL REQUEST &amp; EXPENSE REPORT</h2>
+                            <h4><span t-field="doc.name"/></h4>
+                        </div>
+
+                        <div class="row mt-4 mb-4" id="informations">
+                            <div class="col-6">
+                                <strong>Employee Information:</strong>
+                                <hr class="mt-1 mb-2"/>
+                                <div class="row">
+                                    <div class="col-4">Name</div>
+                                    <div class="col-8">: <span t-field="doc.employee_id.name"/></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4">Department</div>
+                                    <div class="col-8">: <span t-field="doc.department_id.name"/></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4">Job Title</div>
+                                    <div class="col-8">: <span t-field="doc.job_title"/></div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <strong>Trip Details:</strong>
+                                <hr class="mt-1 mb-2"/>
+                                <div class="row">
+                                    <div class="col-4">Destination</div>
+                                    <div class="col-8">: <span t-field="doc.destination"/></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4">Date</div>
+                                    <div class="col-8">: 
+                                        <span t-field="doc.start_date"/> to <span t-field="doc.end_date"/>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4">Project/Analytic</div>
+                                    <div class="col-8">: <span t-field="doc.analytic_account_id.name"/></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <strong>Business Purpose:</strong>
+                                <p t-field="doc.purpose" class="border p-2 bg-light"/>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <h5>A. Planned Expenses (Estimate)</h5>
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Description</th>
+                                        <th class="text-end">Qty/Days</th>
+                                        <th class="text-end">Unit Price</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="doc.line_ids" t-as="line">
+                                        <td><span t-field="line.category"/></td>
+                                        <td><span t-field="line.description"/></td>
+                                        <td class="text-end"><span t-field="line.qty"/></td>
+                                        <td class="text-end"><span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                        <td class="text-end"><span t-field="line.amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="row justify-content-end">
+                                <div class="col-4">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td><strong>Total Estimated:</strong></td>
+                                            <td class="text-end">
+                                                <span t-field="doc.estimated_cost" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4" t-if="doc.settlement_ids">
+                            <h5>B. Actual Expenses (Settlement)</h5>
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Category</th>
+                                        <th>Description</th>
+                                        <th class="text-end">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="doc.settlement_ids" t-as="line">
+                                        <td><span t-field="line.date"/></td>
+                                        <td><span t-field="line.category"/></td>
+                                        <td><span t-field="line.description"/></td>
+                                        <td class="text-end"><span t-field="line.amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            
+                            <div class="row justify-content-end">
+                                <div class="col-5">
+                                    <table class="table table-sm table-bordered">
+                                        <tr>
+                                            <td>Total Actual Spent</td>
+                                            <td class="text-end"><span t-field="doc.total_actual_cost" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Cash Advance</td>
+                                            <td class="text-end text-danger">
+                                                - <span t-field="doc.cash_advance" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                                            </td>
+                                        </tr>
+                                        <tr class="table-active">
+                                            <td><strong>Balance (To Pay/Return)</strong></td>
+                                            <td class="text-end">
+                                                <strong><span t-field="doc.difference_amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></strong>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-5" style="page-break-inside: avoid;">
+                            <div class="col-3 text-center">
+                                <p><strong>Employee</strong></p>
+                                <br/><br/><br/>
+                                <div class="border-top mx-4"></div>
+                                <p class="small text-muted">Date:</p>
+                            </div>
+                            <div class="col-3 text-center">
+                                <p><strong>Line Manager</strong></p>
+                                <br/><br/><br/>
+                                <div class="border-top mx-4"></div>
+                                <p class="small text-muted">Approved</p>
+                            </div>
+                            <div class="col-3 text-center">
+                                <p><strong>HR Dept</strong></p>
+                                <br/><br/><br/>
+                                <div class="border-top mx-4"></div>
+                                <p class="small text-muted">Verified</p>
+                            </div>
+                            <div class="col-3 text-center">
+                                <p><strong>Finance Dept</strong></p>
+                                <br/><br/><br/>
+                                <div class="border-top mx-4"></div>
+                                <p class="small text-muted">Paid/Settled</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
